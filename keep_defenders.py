@@ -11,12 +11,9 @@ class DefendTheKeep(object):
     def defend(self):
         pyautogui.PAUSE = 0.01
         while True:
-            pyautogui.moveTo(860, 250)
-            pyautogui.click()
-            pyautogui.moveTo(960, 250)
-            pyautogui.click()
-            pyautogui.moveTo(1060, 250)
-            pyautogui.click()
+            pyautogui.click(860, 250)
+            pyautogui.click(960, 250)
+            pyautogui.click(1060, 250)
 
 
 defender = DefendTheKeep()
