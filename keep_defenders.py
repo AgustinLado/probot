@@ -14,6 +14,7 @@ class DefendTheKeep(object):
     calculate where to click from there.
     TODO: Add a way to stop it.
     """
+
     def defend(self):
         pyautogui.PAUSE = 0.01
         while True:

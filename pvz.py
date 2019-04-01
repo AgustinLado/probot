@@ -1,7 +1,6 @@
 import sys
 
 import keyboard
-from keyboard import mouse
 import pyautogui
 
 PLANT_SLOTS = {
@@ -24,7 +23,6 @@ GARDEN_SLOTS = {
     'e': (35 + 70 * 2, 35),
     'r': (35 + 70 * 3, 35),
 }
-
 
 pyautogui.PAUSE = 0.01
 
@@ -64,7 +62,6 @@ keyboard.add_hotkey('e', select_garden_tool, args=['e'])
 keyboard.add_hotkey('r', select_garden_tool, args=['r'])
 
 keyboard.add_hotkey('backslash', pyautogui.click)
-
 
 print('Plants away!')
 

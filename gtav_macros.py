@@ -28,6 +28,14 @@ VK_DOWN = 208
 VK_BOGUS = 204
 
 
+def run_in_background(func):
+    """
+    Test: See if running the macros in a new thread helps with the dropped inputs.
+    """
+    thread = threading.Thread(target=lambda: func())
+    thread.start()
+
+
 class Cliffford(object):
     """
     The interaction menu sucks.
@@ -37,17 +45,16 @@ class Cliffford(object):
     When actively using the macros they'll work fine even without a pause,
     but the first call after X time drops some inputs.
     Possible solutions:
+      - A new "`" hotkey has been added to manually warm up the script. (Definitely helps)
+      - Running each command in a new background thread.
       - A large initial pause that comes into play only after a certain time
         has passed since the last hotkey press.
         (TODO)
-      - Maybe simulating a bogus key press would help in keeping the script
-        "warmed up". It does seem like `keyboard` takes its time after not being
-        used for a while.
-        (EDIT: Feels like it helped somewhat. Maybe helps reduce the necessary
-        initial pause).
+      - Maybe simulating a bogus key press would help in keeping the script "warmed up".
+        It does seem like `keyboard` takes its time after not being used for a while.
+        (EDIT: Feels like it helped somewhat. Maybe helps reduce the necessary initial pause).
 
-    TODO: Add macro for calling Mors Mutual Insurance, which needs a pause
-    for the phone to open.
+    TODO: Add macro for calling Mors Mutual Insurance, which needs a pause for the phone to open.
     """
     pause = 0
     initial_pause = 0
@@ -55,11 +62,12 @@ class Cliffford(object):
     ceo_mode = False
 
     def __init__(self):
-        keyboard.add_hotkey('f1', self.open_snack_inventory)
-        keyboard.add_hotkey('f2', self.equip_body_armor)
-        keyboard.add_hotkey('f3', self.request_personal_vehicle)
-        keyboard.add_hotkey('f4', self.toggle_passive_mode)
-        # Bogus function to keep the script warmed up
+        keyboard.add_hotkey('f1', lambda: run_in_background(self.open_snack_inventory))
+        keyboard.add_hotkey('f2', lambda: run_in_background(self.equip_body_armor))
+        keyboard.add_hotkey('f3', lambda: run_in_background(self.request_personal_vehicle))
+        keyboard.add_hotkey('f4', lambda: run_in_background(self.toggle_passive_mode))
+        # Warm up functions
+        keyboard.add_hotkey('`', self.warm_up)
         keyboard.add_hotkey(VK_BOGUS, lambda: None)
 
     def write_with_keyboard(self, keys):
@@ -77,10 +85,16 @@ class Cliffford(object):
             if self.pause:
                 time.sleep(self.pause)
 
+    def warm_up(self):
+        """ Send a bogus key to `keyboard` to "warm up" the process. """
+        print('warm_up')
+        keyboard.send(VK_BOGUS)
+
     def open_snack_inventory(self):
         """
         Interaction Menu > Inventory > Snacks
         """
+        print('f1')
         if self.ceo_mode:
             self.write_with_keyboard([
                 'm',
@@ -98,6 +112,7 @@ class Cliffford(object):
         """
         Interaction Menu > Inventory > Body Armor > Super Heavy Armor > Exit
         """
+        print('f2')
         if self.ceo_mode:
             self.write_with_keyboard([
                 'm',
@@ -119,6 +134,7 @@ class Cliffford(object):
         """
         Interaction Menu > Vehicles > Request Personal Vehicle > Exit
         """
+        print('f3')
         if self.ceo_mode:
             self.write_with_keyboard([
                 'm',
@@ -138,6 +154,7 @@ class Cliffford(object):
         """
         Interaction Menu > Enable/Disable Passive Mode > Exit
         """
+        print('f4')
         self.write_with_keyboard([
             'm',
             VK_UP, 'enter',
@@ -146,10 +163,9 @@ class Cliffford(object):
 
     def main(self):
         """
-        Starts the `keyboard` wait, a secondary thread that listens to user
-        input to update configuration and a third "keep alive" thread.
+        Starts the `keyboard` wait thread and the main configuration loop.
         """
-        print INTRO_MESSAGE
+        print(INTRO_MESSAGE)
 
         # `keyboard` wait for the hotkeys to work
         input_thread = threading.Thread(target=keyboard.wait)
@@ -165,7 +181,7 @@ class Cliffford(object):
             # Keep the input, the direct user interaction, in the main thread
             self.get_input()
         except KeyboardInterrupt:
-            print '\nBye!'
+            print('\nBye!')
             sys.exit(0)
 
     def get_input(self):
@@ -174,15 +190,15 @@ class Cliffford(object):
         Prompts for user input indefinitely to update the config.
         """
         while 1:
-            user_input = raw_input('\n$ Choose mode > ')
+            user_input = input('\n$ Choose mode > ')
 
             # Interaction Menu modes
             if user_input == '1':
                 self.ceo_mode = False
-                print 'Normal mode activated'
+                print('Normal mode activated')
             elif user_input == '2':
                 self.ceo_mode = True
-                print 'CEO mode activated'
+                print('CEO mode activated')
 
             # Pause options
             elif user_input == 'p':
@@ -195,34 +211,32 @@ class Cliffford(object):
                     'Initial pause set to {0} seconds')
 
             else:
-                print '¯\_(ツ)_/¯'
+                print(r'¯\_(ツ)_/¯')
 
     def simulate_hotkey(self):
         """
-        Call a bogus hotkey periodically as to keep the process "warmed up".
-        This comes from the observation that after not calling any macros for
-        a while the first call fails (maybe it executes too fast, maybe it
-        drops inputs, dunno).
+        Attempt to keep the process "warmed up" by calling the `warm_up` function periodically.
         """
         while 1:
             time.sleep(3)
             keyboard.send(VK_BOGUS)
 
+
 def raw_input_positive_number(prompt, success_message):
     """
-    Ensure the raw_input is a valid positive number.
+    Ensure the input is a valid positive number.
     Doesn't return a value if it's invalid.
     """
-    value = raw_input(prompt)
+    value = input(prompt)
     try:
         value = float(value)
         if value >= 0:
-            print success_message.format(value)
+            print(success_message.format(value))
             return value
         else:
             raise ValueError
     except ValueError:
-        print "(╯°□°）╯︵ ┻━┻ That's not a valid number!"
+        print("(╯°□°）╯︵ ┻━┻ That's not a valid number!")
 
 
 if __name__ == '__main__':
